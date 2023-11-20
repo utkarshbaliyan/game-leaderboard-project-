@@ -1,0 +1,122 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+class Team {
+public:
+    string name;
+    int wins;
+    int draws;
+    int losses;
+    int goalsFor;
+    int goalsAgainst;
+    int treeIndex; // Index in the winner tree
+
+    Team(const string& teamName, int index) : name(teamName), wins(0), draws(0), losses(0), goalsFor(0), goalsAgainst(0), treeIndex(index) {}
+
+    int getPoints() const {
+        return (wins * 3) + (draws * 1);
+    }
+
+    int getGoalDifference() const {
+        return goalsFor - goalsAgainst;
+    }
+};
+
+void displayLeaderboard(const vector<Team>& teams) {
+    cout << "Leaderboard\n";
+    cout << "------------------------------------------------------\n";
+    cout << "Team\t\tWins\tDraws\tLosses\tPoints\tGoalsFor\tGoalsAgainst\tGoalDiff\n";
+
+    for (const Team& team : teams) {
+        cout << team.name << "\t\t" << team.wins << "\t" << team.draws << "\t" << team.losses << "\t" << team.getPoints()
+             << "\t" << team.goalsFor << "\t\t" << team.goalsAgainst << "\t\t" << team.getGoalDifference() << endl;
+    }
+}
+
+void fixMatch(vector<Team>& teams, const string& homeTeam, const string& awayTeam, int homeGoals, int awayGoals, vector<int>& winnerTree) {
+    for (Team& team : teams) {
+        if (team.name == homeTeam) {
+            team.goalsFor += homeGoals;
+            team.goalsAgainst += awayGoals;
+            if (homeGoals > awayGoals) {
+                team.wins++;
+                // Update winner tree
+                int index = team.treeIndex;
+                while (index > 1) {
+                    index /= 2;
+                    winnerTree[index] = team.treeIndex;
+                }
+            } else if (homeGoals == awayGoals) {
+                team.draws++;
+            } else {
+                team.losses++;
+            }
+        } else if (team.name == awayTeam) {
+            team.goalsFor += awayGoals;
+            team.goalsAgainst += homeGoals;
+            if (awayGoals > homeGoals) {
+                team.wins++;
+                // Update winner tree
+                int index = team.treeIndex;
+                while (index > 1) {
+                    index /= 2;
+                    winnerTree[index] = team.treeIndex;
+                }
+            } else if (awayGoals == homeGoals) {
+                team.draws++;
+            } else {
+                team.losses++;
+            }
+        }
+    }
+}
+
+int main() {
+    vector<Team> teams;
+    int numTeams;
+
+    cout << "Enter the number of teams: ";
+    cin >> numTeams;
+
+    for (int i = 0; i < numTeams; i++) {
+        string teamName;
+        cout << "Enter the name of team " << i + 1 << ": ";
+        cin >> teamName;
+        teams.push_back(Team(teamName, i + 1)); // Assign tree index
+    }
+
+    displayLeaderboard(teams);
+
+    // Initialize winner tree with placeholders
+    int winnerTreeSize = numTeams * 2;
+    vector<int> winnerTree(winnerTreeSize, 0);
+
+    int numMatches;
+    cout << "Enter the number of matches: ";
+    cin >> numMatches;
+
+    for (int i = 0; i < numMatches; i++) {
+        string homeTeam, awayTeam;
+        int homeGoals, awayGoals;
+
+        cout << "Enter match " << i + 1 << " details (HomeTeam AwayTeam HomeGoals AwayGoals): ";
+        cin >> homeTeam >> awayTeam >> homeGoals >> awayGoals;
+
+        fixMatch(teams, homeTeam, awayTeam, homeGoals, awayGoals, winnerTree);
+
+        displayLeaderboard(teams);
+    }
+
+    // Determine the overall winner using the winner tree
+    int overallWinnerIndex = winnerTree[1];
+    Team overallWinner = teams[overallWinnerIndex - 1];
+
+    cout << endl;
+    cout << "Winner of the tournament: " << overallWinner.name << endl;
+
+    return 0;
+}
